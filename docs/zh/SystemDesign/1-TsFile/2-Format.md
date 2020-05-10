@@ -65,7 +65,7 @@
 
 下图是关于TsFile的结构图。
 
-![TsFile Breakdown](https://user-images.githubusercontent.com/7240743/78330206-05cc6380-75b6-11ea-96c7-06f6f7346f6a.png)
+![TsFile Breakdown](https://user-images.githubusercontent.com/19167280/81489463-389a0380-92a8-11ea-8c82-d3de077272c4.png)
 
 此文件包括两个设备 d1、d2，每个设备包含三个测点 s1、s2、s3，共 6 个时间序列，d1为蓝色，d2为紫色。每个时间序列包含两个 Chunk。
 
@@ -77,8 +77,8 @@
 
 查询流程：以查 d1.s1 为例
 
-* 反序列化 TsFileMetadata，得到 d1 的所有 TimeseriesMetadata 的位置
-* 反序列化 d1 的所有 TimeseriesMetadata，并得到 d1.s1 的 TimeseriesMetadata
+* 反序列化 TsFileMetadata，得到 d1.s1 的 TimeseriesMetadata 的位置
+* 反序列化得到 d1.s1 的 TimeseriesMetadata
 * 根据 d1.s1 的 TimeseriesMetadata，反序列化其所有 ChunkMetadata
 * 根据 d1.s1 的每一个 ChunkMetadata，读取其 Chunk 数据
 
@@ -141,123 +141,106 @@ PageHeader 结构
 
 #### 1.2.3  元数据
 
-##### 1.2.3.1 TsDeviceMetaData
+##### 1.2.3.1 ChunkMetadata
 
-第一部分的元数据是 `TsDeviceMetaData` 
-
-|                       成员                       | 类型 |
-| :----------------------------------------------: | :--: |
-|               开始时间(startTime)                | long |
-|                结束时间(endTime)                 | long |
-|              包含的ChunkGroup的数量              | int  |
-| 所有的ChunkGroupMetaData(chunkGroupMetadataList) | list |
-
-###### ChunkGroupMetaData
-
-|                          成员                           |  类型  |
-| :-----------------------------------------------------: | :----: |
-|                    设备Id(deviceID)                     | String |
-| 在文件中ChunkGroup开始的偏移量(startOffsetOfChunkGroup) |  long  |
-|  在文件中ChunkGroup结束的偏移量(endOffsetOfChunkGroup)  |  long  |
-|                      版本(version)                      |  long  |
-|                包含的ChunkMetaData的数量                |  int   |
-|         所有的ChunkMetaData(chunkMetaDataList)          |  list  |
-
-###### ChunkMetaData
+第一部分的元数据是 `ChunkMetadata` 
 
 |                        成员                        |   类型   |
 | :------------------------------------------------: | :------: |
 |             传感器名称(measurementUid)             |  String  |
-| 文件中ChunkHeader开始的偏移量(offsetOfChunkHeader) |   long   |
-|              数据的总数(numOfPoints)               |   long   |
+| 文件中 ChunkHeader 开始的偏移量(offsetOfChunkHeader) |   long   |
+|                数据类型(tsDataType)                |  short   |
+|              数据的总数(count)                  |   long   |
 |                开始时间(startTime)                 |   long   |
 |                 结束时间(endTime)                  |   long   |
+|           最小值(min)            | Type of the chunk |
+|           最大值(max)            | Type of the chunk |
+|         第一个值(first)          | Type of the chunk |
+|         最后一个值(last)         | Type of the chunk |
+|           值的和(sum)            |      double      |
+
+其中，对于五个统计值(min、max、first、last、sum)，Binary 和 Boolean 类型的 `ChunkMetadata` 只有 first 和 last 两个值。
+
+##### 1.2.3.2 TimeseriesMetadata
+
+第二部分的元数据是 `TimeseriesMetadata`。
+
+|                        成员                        |   类型   |
+| :------------------------------------------------: | :------: |
+|             传感器名称(measurementUid)             |  String  |
 |                数据类型(tsDataType)                |  short   |
-|                  chunk的统计信息                   | TsDigest |
+| 文件中 ChunkMetadata 列表开始的偏移量(startOffsetOfChunkMetadataList) |  long  |
+|  ChunkMetadata 列表的大小(chunkMetaDataListDataSize)  |  int  |
+|              数据的总数(count)                  |   long   |
+|                开始时间(startTime)                 |   long   |
+|                 结束时间(endTime)                  |   long   |
+|           最小值(min)            | Type of the Timeseries |
+|           最大值(max)            | Type of the Timeseries |
+|         第一个值(first)          | Type of the Timeseries |
+|         最后一个值(last)         | Type of the Timeseries |
+|           值的和(sum)            |      double      |
 
-###### TsDigest
+其中，对于五个统计值(min、max、first、last、sum)，Binary 和 Boolean 类型的 `TimeseriesMetadata` 只有 first 和 last 两个值。
 
-目前有五项统计数据: `min_value, max_value, first_value, last_value, sum_value`。
+##### 1.2.3.3 TsFileMetaData
 
-在 v0.8.0 版本中, 统计数据使用 name-value 编码的键值对。 也就是 `Map<String, ByteBuffer> statistics`。 name使用的一个字符串类型(需要注意的是字符串前有个长度标识)。 对于值来讲，它有可能是很多种类型，所以需要用 integer 类型用来描述值的长度。 比如, 如果 `min_value` 是一个 integer 类型的 0, 那么在 TsFile 中将被存储为 [9 "min_value" 4 0]。
-
-下面是一个调用 `TsDigest.deserializeFrom(buffer)` 方法后的数据示例。在 v0.8.0 版本中, 我们会得到 
-
-```
-Map<String, ByteBuffer> statistics = {
-    "min_value" -> ByteBuffer of int value 0, 
-    "last" -> ByteBuffer of int value 19,
-    "sum" -> ByteBuffer of double value 1093347116,
-    "first" -> ByteBuffer of int value 0,
-    "max_value" -> ByteBuffer of int value 99
-}
-```
-
-<img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/33376433/63765352-664a4280-c8fb-11e9-869e-859edf6d00bb.png">
-
-在 v0.9.0 版本中, 为了提高空间和时间的效率，存储的结构被修改为数组的形式。也就是 `ByteBuffer[] statistics`。用固定的位置代表某一个具体的统计信息, 在 StatisticType 中定义的顺序如下:
-
-```
-enum StatisticType {
-    min_value, max_value, first_value, last_value, sum_value
-}
-```
-
-修改存储形式后,在上面的示例中,我们将得到
-
-```
-ByteBuffer[] statistics = [
-    ByteBuffer of int value 0, // associated with "min_value"
-    ByteBuffer of int value 99, // associated with "max_value"
-    ByteBuffer of int value 0, // associated with "first_value"
-    ByteBuffer of int value 19, // associated with "last_value"
-    ByteBuffer of double value 1093347116 // associated with "sum_value"
-]
-```
-
-另一个关于 v0.9.0 的示例数据, 当我们从 buffer [3, 0,4,0, 1,4,99, 3,4,19] 反序列化为 TsDigest 结构时, 我们将得到 
-
-```
-//这里可能会有些难理解，读取顺序为：1.读取一个int类型的数据总数(3) 2.读取short类型的位于数组中的位置(0) 3.读取int类型的数据长度(4) 4.根据第3步的长度读取数据(0)
-//因为示例数据中，索引值只出现了(0,1,3),所以 first_value sum_value 的值为null
-
-ByteBuffer[] statistics = [
-    ByteBuffer of int value 0, // associated with "min_value"
-    ByteBuffer of int value 99, // associated with "max_value"
-    null, // associated with "first_value"
-    ByteBuffer of int value 19, // associated with "last_value"
-    null // associated with "sum_value"
-]
-```
-
-##### 1.2.3.2 TsFileMetaData
-
-上节讲到的是 `TsDeviceMetadatas` 紧跟其后的数据是 `TsFileMetaData`。
+第三部分的元数据是 `TsFileMetaData`。
 
 |                        成员                         |                类型                |
 | :-------------------------------------------------: | :--------------------------------: |
-|                   包含的设备个数                    |                int                 |
-|  设备名称和设备元数据索引的键值对(deviceIndexMap)   | String, TsDeviceMetadataIndex pair |
-|                  包含的传感器个数                   |                int                 |
-| 传感器名称和传感器元数据的键值对(measurementSchema) |   String, MeasurementSchema pair   |
+|       元数据索引节点(MetadataIndexNode)列表              |   见下      |
 |                      水印标识                       |                byte                |
 |         当标识为0x01时的水印信息(createdBy)         |               String               |
-|           包含的Chunk总数(totalChunkNum)            |                int                 |
-|          失效的Chunk总数(invalidChunkNum)           |                int                 |
+|           包含的 Chunk 总数(totalChunkNum)            |                int                 |
+|          失效的 Chunk 总数(invalidChunkNum)           |                int                 |
+|                版本信息映射的大小                 |                int                 |
+|                版本信息映射(versionInfo)         |              Long, Long Pair       |
+|       MetaMarker.SEPARATOR偏移量 (metaOffset)   |                long                 |
 |                布隆过滤器序列化大小                 |                int                 |
 |                 布隆过滤器所有数据                  |      byte[Bloom filter size]       |
 |                   布隆过滤器容量                    |                int                 |
 |        布隆过滤器容量包含的HashFunction数量         |                int                 |
 
-###### TsDeviceMetadataIndex
+如果版本信息映射的数量大于 0, 版本信息映射会以一个列表形式的 \<Long, Long\> 键值对存储。
+其中，元数据索引节点(MetadataIndexNode) **可能**不止一个，每一个节点的成员和类型具体如下：
 
 |                  成员                  |  类型  |
 | :------------------------------------: | :----: |
-|                 设备名                 | String |
-| 文件中TsDeviceMetaData的偏移量(offset) |  long  |
-|         序列化后数据大小(len)          |  int   |
-|     存储的设备最小时间(startTime)      |  long  |
-|      存储的设备最大时间(endTime)       |  long  |
+|  元数据索引项(MetadataIndexEntry)个数    | int |
+|      元数据索引项(MetadataIndexEntry)列表    | 见下 |
+|          此元数据索引节点的结束偏移量(endOffset)      | long |
+
+每一个元数据索引项(MetadataIndexEntry)的成员和类型具体如下：
+|                  成员                  |  类型  |
+| :------------------------------------: | :----: |
+|  对应设备或传感器的名字(name)    | String |
+|           偏移量(offset)       | long  |
+|   元数据索引项类型(MetadataIndexEntry)   | byte |
+
+所有的元数据索引节点构成一棵**元数据索引树**，这棵树最多由两个层级组成：设备索引层级和传感器索引层级，在不同的情况下会有不同的组成方式。元数据索引项类型有四种，分别是`INTERNAL_DEVICE`、`LEAF_DEVICE`、`INTERNAL_MEASUREMENT`、`LEAF_MEASUREMENT`，分别对应其节点设备索引层级的中间节点和叶子节点，和传感器索引层级的中间节点和叶子节点。
+只有传感器索引层级对的叶子节点(`LEAF_MEASUREMENT`) 指向 `TimeseriesMetadata`。
+
+为了更清楚的说明元数据索引树的结构，这里我们使用四个例子来加以详细说明。
+
+元数据索引树的度（即每个节点的最大子节点个数）是可以由用户进行配置的，配置项为`max_degree_of_index_node`，其默认值为1024。在以下例子中，为了简化，我们假定 `max_degree_of_index_node = 10`。
+
+<img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466597-94f81700-9205-11ea-9476-c3d083872232.png">
+
+在5个设备，每个设备有5个传感器的情况下，由于设备数和传感器树均不超过 `max_degree_of_index_node`，因此树并没有产生多个层级，由1个 MetadataIndexNode 节点中的5个 MetadataIndexEntry 直接指向对应的 `TimeseriesMetadata`。
+
+<img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466606-99bccb00-9205-11ea-8ba4-d2ed07529f58.png">
+
+在1个设备，设备中有150个传感器的情况下，传感器个数超过了 `max_degree_of_index_node`，形成元数据索引树的传感器索引层级。在这个层级里，每个 MetadataIndexNode 最多由10个 MetadataIndexEntry 组成，由于均直接指向 `TimeseriesMetadata`，因此其索引项类型为 `LEAF_MEASUREMENT`。而根节点指向传感器索引层级的叶子节点，其索引项类型为 `INTERNAL_MEASUREMENT`。
+
+<img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466613-9b868e80-9205-11ea-860a-4bf224d04359.png">
+
+在150个设备，每个设备中有1个传感器的情况下，设备个数超过了 `max_degree_of_index_node`，形成元数据索引树的设备索引层级。在这个层级里，每个 MetadataIndexNode 最多由10个 MetadataIndexEntry 组成，由于均直接指向 `TimeseriesMetadata`，因此其索引项类型为 `LEAF_MEASUREMENT`。而后续产生的中间节点和根节点不是设备索引层级的叶子节点，因此索引项类型为 `INTERNAL_DEVICE`。
+
+<img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466616-9e817f00-9205-11ea-9dc1-aec392eb5225.png">
+
+在150个设备，每个设备中有150个传感器的情况下，传感器和设备个数均超过了 `max_degree_of_index_node`，形成元数据索引树的传感器层级和设备索引层级。在这两个层级里，每个 MetadataIndexNode 均最多由10个 MetadataIndexEntry 组成。如前所述，从根节点到设备索引层级的叶子节点，索引项类型分别为`INTERNAL_DEVICE` 和 `LEAF_DEVICE`，而每个设备索引层级的叶子节点都是传感器索引层级的根节点，从这里到传感器索引层级的叶子节点，索引项类型分别为`INTERNAL_MEASUREMENT` 和 `LEAF_MEASUREMENT`。
+
+元数据索引采用树形结构进行设计的目的是在设备数或者传感器数量过大时，可以不用一次读取所有的 `TimeseriesMetadata`，只需要根据所读取的传感器定位对应的节点，从而减少 I/O，加快查询速度。有关 TsFile 的读流程将在本章最后一节加以详细说明。
 
 ###### MeasurementSchema
 
@@ -270,11 +253,11 @@ ByteBuffer[] statistics = [
 |      附带参数的数量       |         int         |
 |   所有附带的参数(props)   | String, String pair |
 
-如果附带的参数数量大于 0, 传感器的附带参数会以一个数组形式的 <String, String> 键值对存储。
+如果附带的参数数量大于 0, 传感器的附带参数会以一个数组形式的 \<String, String\> 键值对存储。
 
 比如说: "max_point_number""2".
 
-##### 1.2.3.3 TsFileMetadataSize
+##### 1.2.3.4 TsFileMetadataSize
 
 在TsFileMetaData之后，有一个int值用来表示TsFileMetaData的大小。
 
@@ -390,81 +373,227 @@ Linux or MacOs:
 
 - 注意: 如果没有设置输出文件的存储路径, 将使用 "TsFile_sketch_view.txt" 做为默认值。 
 
-在Windows系统中的示例:
+在 macOS 系统中的示例:
 
-```bat
-D:\incubator-iotdb\server\target\iotdb-server-0.10.0\tools\tsfileToolSet>.\print-tsfile-sketch.bat D:\data\data\sequence\root.vehicle\1572496142067-101-0.tsfile
+```$xslt
+/incubator-iotdb/server/target/iotdb-server-0.10.0/tools/tsfileToolSet$ ./print-tsfile-sketch.sh test.tsfile
 ​````````````````````````
 Starting Printing the TsFile Sketch
 ​````````````````````````
-TsFile path:D:\data\data\sequence\root.vehicle\1572496142067-101-0.tsfile
+TsFile path:test.tsfile
 Sketch save path:TsFile_sketch_view.txt
 -------------------------------- TsFile Sketch --------------------------------
-file path: D:\data\data\sequence\root.vehicle\1572496142067-101-0.tsfile
-file length: 187382
+file path: test.tsfile
+file length: 33436
 
-            POSITION|   CONTENT
-            --------    -------
-                   0|   [magic head] TsFile
-                   6|   [version number] 000001
-|||||||||||||||||||||   [Chunk Group] of root.vehicle.d0 begins at pos 12, ends at pos 186469, version:102, num of Chunks:6
-                  12|   [Chunk] of s3, numOfPoints:10600, time range:[3000,13599], tsDataType:TEXT,
-                        TsDigest:[min_value:A,max_value:E,first_value:A,last_value:E,sum_value:0.0]
-                    |           [marker] 1
-                    |           [ChunkHeader]
-                    |           11 pages
-               55718|   [Chunk] of s4, numOfPoints:10600, time range:[3000,13599], tsDataType:BOOLEAN,
-                        TsDigest:[min_value:false,max_value:true,first_value:true,last_value:false,sum_value:0.0]
-                    |           [marker] 1
-                    |           [ChunkHeader]
-                    |           11 pages
-               68848|   [Chunk] of s5, numOfPoints:10600, time range:[3000,13599], tsDataType:DOUBLE,
-                        TsDigest:[min_value:3000.0,max_value:13599.0,first_value:3000.0,last_value:13599.0,sum_value:8.79747E7]
-                    |           [marker] 1
-                    |           [ChunkHeader]
-                    |           11 pages
-               98474|   [Chunk] of s0, numOfPoints:21900, time range:[3000,100999], tsDataType:INT32,
-                        TsDigest:[min_value:0,max_value:99,first_value:0,last_value:19,sum_value:889750.0]
-                    |           [marker] 1
-                    |           [ChunkHeader]
-                    |           22 pages
-              123369|   [Chunk] of s1, numOfPoints:21900, time range:[3000,100999], tsDataType:INT64,
-                        TsDigest:[min_value:0,max_value:39,first_value:8,last_value:19,sum_value:300386.0]
-                    |           [marker] 1
-                    |           [ChunkHeader]
-                    |           22 pages
-              144741|   [Chunk] of s2, numOfPoints:21900, time range:[3000,100999], tsDataType:FLOAT,
-                        TsDigest:[min_value:0.0,max_value:122.0,first_value:8.0,last_value:52.0,sum_value:778581.0]
-                    |           [marker] 1
-                    |           [ChunkHeader]
-                    |           22 pages
-              186437|   [Chunk Group Footer]
-                    |           [marker] 0
-                    |           [deviceID] root.vehicle.d0
-                    |           [dataSize] 186425
-                    |           [num of chunks] 6
-|||||||||||||||||||||   [Chunk Group] of root.vehicle.d0 ends
-              186469|   [marker] 2
-              186470|   [TsDeviceMetadata] of root.vehicle.d0, startTime:3000, endTime:100999
-                    |           [startTime] 3000tfi
-                    |           [endTime] 100999
-                    |           [num of ChunkGroupMetaData] 1
-                    |           1 ChunkGroupMetaData
-              187133|   [TsFileMetaData]
-                    |           [num of devices] 1
-                    |           1 key&TsDeviceMetadataIndex
-                    |           [num of measurements] 6
-                    |           6 key&measurementSchema
-                    |           [createBy isNotNull] false
-                    |           [totalChunkNum] 6
-                    |           [invalidChunkNum] 0
-                    |           [bloom filter bit vector byte array length] 31
-                    |           [bloom filter bit vector byte array]
-                    |           [bloom filter number of bits] 256
-                    |           [bloom filter number of hash functions] 5
-              187372|   [TsFileMetaDataSize] 239
-              187376|   [magic tail] TsFile
-              187382|   END of TsFile
+            POSITION|	CONTENT
+            -------- 	-------
+                   0|	[magic head] TsFile
+                   6|	[version number] 000002
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d2, num of Chunks:3
+                  12|	[Chunk] of s_INT64e_RLE, numOfPoints:10000, time range:[1,10000], tsDataType:INT64, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		2 pages
+                 677|	[Chunk] of s_INT64e_TS_2DIFF, numOfPoints:10000, time range:[1,10000], tsDataType:INT64, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+                1349|	[Chunk] of s_INT64e_PLAIN, numOfPoints:10000, time range:[1,10000], tsDataType:INT64, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		2 pages
+                5766|	[Chunk Group Footer]
+                    |		[marker] 0
+                    |		[deviceID] root.group_12.d2
+                    |		[dataSize] 5754
+                    |		[num of chunks] 3
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d2 ends
+                5799|	[Version Info pair]
+                    |		[marker] 3
+                    |		[offset] 5808
+                    |		[version] 102
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d1, num of Chunks:3
+                5808|	[Chunk] of s_INT32e_PLAIN, numOfPoints:10000, time range:[1,10000], tsDataType:INT32, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+                8231|	[Chunk] of s_INT32e_TS_2DIFF, numOfPoints:10000, time range:[1,10000], tsDataType:INT32, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+                8852|	[Chunk] of s_INT32e_RLE, numOfPoints:10000, time range:[1,10000], tsDataType:INT32, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+                9399|	[Chunk Group Footer]
+                    |		[marker] 0
+                    |		[deviceID] root.group_12.d1
+                    |		[dataSize] 3591
+                    |		[num of chunks] 3
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d1 ends
+                9432|	[Version Info pair]
+                    |		[marker] 3
+                    |		[offset] 9441
+                    |		[version] 102
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d0, num of Chunks:2
+                9441|	[Chunk] of s_BOOLEANe_RLE, numOfPoints:10000, time range:[1,10000], tsDataType:BOOLEAN, 
+                     	startTime: 1 endTime: 10000 count: 10000 [firstValue:true,lastValue:true]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+                9968|	[Chunk] of s_BOOLEANe_PLAIN, numOfPoints:10000, time range:[1,10000], tsDataType:BOOLEAN, 
+                     	startTime: 1 endTime: 10000 count: 10000 [firstValue:true,lastValue:true]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+               10961|	[Chunk Group Footer]
+                    |		[marker] 0
+                    |		[deviceID] root.group_12.d0
+                    |		[dataSize] 1520
+                    |		[num of chunks] 2
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d0 ends
+               10994|	[Version Info pair]
+                    |		[marker] 3
+                    |		[offset] 11003
+                    |		[version] 102
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d5, num of Chunks:1
+               11003|	[Chunk] of s_TEXTe_PLAIN, numOfPoints:10000, time range:[1,10000], tsDataType:TEXT, 
+                     	startTime: 1 endTime: 10000 count: 10000 [firstValue:version_test,lastValue:version_test]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		3 pages
+               19278|	[Chunk Group Footer]
+                    |		[marker] 0
+                    |		[deviceID] root.group_12.d5
+                    |		[dataSize] 8275
+                    |		[num of chunks] 1
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d5 ends
+               19311|	[Version Info pair]
+                    |		[marker] 3
+                    |		[offset] 19320
+                    |		[version] 102
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d4, num of Chunks:4
+               19320|	[Chunk] of s_DOUBLEe_PLAIN, numOfPoints:10000, time range:[1,10000], tsDataType:DOUBLE, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00000000123]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		2 pages
+               23740|	[Chunk] of s_DOUBLEe_TS_2DIFF, numOfPoints:10000, time range:[1,10000], tsDataType:DOUBLE, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.000000002045]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+               24414|	[Chunk] of s_DOUBLEe_GORILLA, numOfPoints:10000, time range:[1,10000], tsDataType:DOUBLE, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.000000002045]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+               25054|	[Chunk] of s_DOUBLEe_RLE, numOfPoints:10000, time range:[1,10000], tsDataType:DOUBLE, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.000000001224]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		2 pages
+               25717|	[Chunk Group Footer]
+                    |		[marker] 0
+                    |		[deviceID] root.group_12.d4
+                    |		[dataSize] 6397
+                    |		[num of chunks] 4
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d4 ends
+               25750|	[Version Info pair]
+                    |		[marker] 3
+                    |		[offset] 25759
+                    |		[version] 102
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d3, num of Chunks:4
+               25759|	[Chunk] of s_FLOATe_GORILLA, numOfPoints:10000, time range:[1,10000], tsDataType:FLOAT, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+               26375|	[Chunk] of s_FLOATe_PLAIN, numOfPoints:10000, time range:[1,10000], tsDataType:FLOAT, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+               28796|	[Chunk] of s_FLOATe_RLE, numOfPoints:10000, time range:[1,10000], tsDataType:FLOAT, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+               29343|	[Chunk] of s_FLOATe_TS_2DIFF, numOfPoints:10000, time range:[1,10000], tsDataType:FLOAT, 
+                     	startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]
+                    |		[marker] 1
+                    |		[ChunkHeader]
+                    |		1 pages
+               29967|	[Chunk Group Footer]
+                    |		[marker] 0
+                    |		[deviceID] root.group_12.d3
+                    |		[dataSize] 4208
+                    |		[num of chunks] 4
+|||||||||||||||||||||	[Chunk Group] of root.group_12.d3 ends
+               30000|	[Version Info pair]
+                    |		[marker] 3
+                    |		[offset] 30009
+                    |		[version] 102
+               30009|	[marker] 2
+               30010|	[ChunkMetadataList] of root.group_12.d0.s_BOOLEANe_PLAIN, tsDataType:BOOLEAN
+                    |	[startTime: 1 endTime: 10000 count: 10000 [firstValue:true,lastValue:true]] 
+               30066|	[ChunkMetadataList] of root.group_12.d0.s_BOOLEANe_RLE, tsDataType:BOOLEAN
+                    |	[startTime: 1 endTime: 10000 count: 10000 [firstValue:true,lastValue:true]] 
+               30120|	[ChunkMetadataList] of root.group_12.d1.s_INT32e_PLAIN, tsDataType:INT32
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]] 
+               30196|	[ChunkMetadataList] of root.group_12.d1.s_INT32e_RLE, tsDataType:INT32
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]] 
+               30270|	[ChunkMetadataList] of root.group_12.d1.s_INT32e_TS_2DIFF, tsDataType:INT32
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]] 
+               30349|	[ChunkMetadataList] of root.group_12.d2.s_INT64e_PLAIN, tsDataType:INT64
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]] 
+               30441|	[ChunkMetadataList] of root.group_12.d2.s_INT64e_RLE, tsDataType:INT64
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]] 
+               30531|	[ChunkMetadataList] of root.group_12.d2.s_INT64e_TS_2DIFF, tsDataType:INT64
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1,maxValue:1,firstValue:1,lastValue:1,sumValue:10000.0]] 
+               30626|	[ChunkMetadataList] of root.group_12.d3.s_FLOATe_GORILLA, tsDataType:FLOAT
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]] 
+               30704|	[ChunkMetadataList] of root.group_12.d3.s_FLOATe_PLAIN, tsDataType:FLOAT
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]] 
+               30780|	[ChunkMetadataList] of root.group_12.d3.s_FLOATe_RLE, tsDataType:FLOAT
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]] 
+               30854|	[ChunkMetadataList] of root.group_12.d3.s_FLOATe_TS_2DIFF, tsDataType:FLOAT
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00023841858]] 
+               30933|	[ChunkMetadataList] of root.group_12.d4.s_DOUBLEe_GORILLA, tsDataType:DOUBLE
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.000000002045]] 
+               31028|	[ChunkMetadataList] of root.group_12.d4.s_DOUBLEe_PLAIN, tsDataType:DOUBLE
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.00000000123]] 
+               31121|	[ChunkMetadataList] of root.group_12.d4.s_DOUBLEe_RLE, tsDataType:DOUBLE
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.000000001224]] 
+               31212|	[ChunkMetadataList] of root.group_12.d4.s_DOUBLEe_TS_2DIFF, tsDataType:DOUBLE
+                    |	[startTime: 1 endTime: 10000 count: 10000 [minValue:1.1,maxValue:1.1,firstValue:1.1,lastValue:1.1,sumValue:11000.000000002045]] 
+               31308|	[ChunkMetadataList] of root.group_12.d5.s_TEXTe_PLAIN, tsDataType:TEXT
+                    |	[startTime: 1 endTime: 10000 count: 10000 [firstValue:version_test,lastValue:version_test]] 
+               32840|	[MetadataIndex] of root.group_12.d0
+               32881|	[MetadataIndex] of root.group_12.d1
+               32920|	[MetadataIndex] of root.group_12.d2
+               32959|	[MetadataIndex] of root.group_12.d3
+               33000|	[MetadataIndex] of root.group_12.d4
+               33042|	[MetadataIndex] of root.group_12.d5
+               33080|	[TsFileMetadata]
+                    |		[num of devices] 6
+                    |		6 key&TsMetadataIndex
+                    |		[totalChunkNum] 17
+                    |		[invalidChunkNum] 0
+                    |		[bloom filter bit vector byte array length] 32
+                    |		[bloom filter bit vector byte array] 
+                    |		[bloom filter number of bits] 256
+                    |		[bloom filter number of hash functions] 5
+               33426|	[TsFileMetadataSize] 346
+               33430|	[magic tail] TsFile
+               33436|	END of TsFile
 
 ---------------------------------- TsFile Sketch End ----------------------------------
 ````````````````````````
@@ -475,10 +604,12 @@ file length: 187382
 
 ### 1.4 TsFile 的总览图
 
-#### v0.8.0
+#### v0.8
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/33376433/65209576-2bd36000-dacb-11e9-9e43-49e0dd01274e.png">
 
-#### v0.9.0
+#### v0.9
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/33376433/69341240-26012300-0ca4-11ea-91a1-d516810cad44.png">
+
+#### v0.10
