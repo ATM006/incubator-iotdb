@@ -32,8 +32,8 @@ import org.apache.iotdb.tsfile.write.writer.TsFileOutput;
 
 public class MetadataIndexConstructor {
 
-  private static final int MAX_DEGREE_OF_INDEX_NODE = TSFileDescriptor.getInstance().getConfig()
-      .getMaxDegreeOfIndexNode();
+  private static final int DEGREE_OF_INDEX_NODE = TSFileDescriptor.getInstance().getConfig()
+      .getDegreeOfIndexNode();
 
   private MetadataIndexConstructor() {
     throw new IllegalStateException("Utility class");
@@ -60,7 +60,7 @@ public class MetadataIndexConstructor {
       for (int i = 0; i < entry.getValue().size(); i++) {
         timeseriesMetadata = entry.getValue().get(i);
         // when constructing from leaf node, every "degree number of nodes" are related to an entry
-        if (i % MAX_DEGREE_OF_INDEX_NODE == 0) {
+        if (i % DEGREE_OF_INDEX_NODE == 0) {
           if (currentIndexNode.isFull()) {
             addCurrentIndexNodeToQueue(currentIndexNode, measurementMetadataIndexQueue,
                 out);
@@ -77,7 +77,7 @@ public class MetadataIndexConstructor {
     }
 
     // if not exceed the max child nodes num, ignore the device index and directly point to the measurement
-    if (deviceMetadataIndexMap.size() <= MAX_DEGREE_OF_INDEX_NODE) {
+    if (deviceMetadataIndexMap.size() <= DEGREE_OF_INDEX_NODE) {
       MetadataIndexNode metadataIndexNode = new MetadataIndexNode();
       for (Map.Entry<String, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
         metadataIndexNode.addEntry(new MetadataIndexEntry(entry.getKey(), out.getPosition(),

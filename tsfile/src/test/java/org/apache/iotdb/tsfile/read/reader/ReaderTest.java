@@ -51,7 +51,7 @@ public class ReaderTest {
   @Before
   public void before() throws IOException {
     TSFileDescriptor.getInstance().getConfig().setTimeEncoder("TS_2DIFF");
-    TSFileDescriptor.getInstance().getConfig().setMaxDegreeOfIndexNode(3);
+    TSFileDescriptor.getInstance().getConfig().setDegreeOfIndexNode(3);
     TsFileGeneratorForTest.generateFile(rowCount, 10 * 1024 * 1024, 10000);
     fileReader = new TsFileSequenceReader(FILE_PATH);
     metadataQuerierByFile = new MetadataQuerierByFileImpl(fileReader);
@@ -60,7 +60,7 @@ public class ReaderTest {
   @After
   public void after() throws IOException {
     fileReader.close();
-    TSFileDescriptor.getInstance().getConfig().setMaxDegreeOfIndexNode(1024);
+    TSFileDescriptor.getInstance().getConfig().setDegreeOfIndexNode(1024);
     TsFileGeneratorForTest.after();
   }
 

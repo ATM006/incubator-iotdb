@@ -30,8 +30,8 @@ import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
 public class MetadataIndexNode {
 
-  private static final int MAX_DEGREE_OF_INDEX_NODE = TSFileDescriptor.getInstance().getConfig()
-      .getMaxDegreeOfIndexNode();
+  private static final int DEGREE_OF_INDEX_NODE = TSFileDescriptor.getInstance().getConfig()
+      .getDegreeOfIndexNode();
   private List<MetadataIndexEntry> children;
   private long endOffset;
 
@@ -62,7 +62,7 @@ public class MetadataIndexNode {
   }
 
   boolean isFull() {
-    return children.size() == MAX_DEGREE_OF_INDEX_NODE;
+    return children.size() == DEGREE_OF_INDEX_NODE;
   }
 
   MetadataIndexEntry peek() {

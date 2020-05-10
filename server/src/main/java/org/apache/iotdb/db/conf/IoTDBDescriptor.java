@@ -533,9 +533,9 @@ public class IoTDBDescriptor {
     TSFileDescriptor.getInstance().getConfig().setCompressor(properties
         .getProperty("compressor",
             TSFileDescriptor.getInstance().getConfig().getCompressor().toString()));
-    TSFileDescriptor.getInstance().getConfig().setMaxDegreeOfIndexNode(Integer.parseInt(properties
-        .getProperty("max_degree_of_index_node", Integer
-            .toString(TSFileDescriptor.getInstance().getConfig().getMaxDegreeOfIndexNode()))));
+    TSFileDescriptor.getInstance().getConfig().setDegreeOfIndexNode(Integer.parseInt(properties
+        .getProperty("degree_of_index_node", Integer
+            .toString(TSFileDescriptor.getInstance().getConfig().getDegreeOfIndexNode()))));
   }
 
   public void loadHotModifiedProps() throws QueryProcessException {

@@ -222,23 +222,23 @@ PageHeader 结构
 
 为了更清楚的说明元数据索引树的结构，这里我们使用四个例子来加以详细说明。
 
-元数据索引树的度（即每个节点的最大子节点个数）是可以由用户进行配置的，配置项为`max_degree_of_index_node`，其默认值为1024。在以下例子中，为了简化，我们假定 `max_degree_of_index_node = 10`。
+元数据索引树的度（即每个节点的最大子节点个数）是可以由用户进行配置的，配置项为`degree_of_index_node`，其默认值为1024。在以下例子中，为了简化，我们假定 `degree_of_index_node = 10`。
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466597-94f81700-9205-11ea-9476-c3d083872232.png">
 
-在5个设备，每个设备有5个传感器的情况下，由于设备数和传感器树均不超过 `max_degree_of_index_node`，因此树并没有产生多个层级，由1个 MetadataIndexNode 节点中的5个 MetadataIndexEntry 直接指向对应的 `TimeseriesMetadata`。
+在5个设备，每个设备有5个传感器的情况下，由于设备数和传感器树均不超过 `degree_of_index_node`，因此树并没有产生多个层级，由1个 MetadataIndexNode 节点中的5个 MetadataIndexEntry 直接指向对应的 `TimeseriesMetadata`。
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466606-99bccb00-9205-11ea-8ba4-d2ed07529f58.png">
 
-在1个设备，设备中有150个传感器的情况下，传感器个数超过了 `max_degree_of_index_node`，形成元数据索引树的传感器索引层级。在这个层级里，每个 MetadataIndexNode 最多由10个 MetadataIndexEntry 组成，由于均直接指向 `TimeseriesMetadata`，因此其索引项类型为 `LEAF_MEASUREMENT`。而根节点指向传感器索引层级的叶子节点，其索引项类型为 `INTERNAL_MEASUREMENT`。
+在1个设备，设备中有150个传感器的情况下，传感器个数超过了 `degree_of_index_node`，形成元数据索引树的传感器索引层级。在这个层级里，每个 MetadataIndexNode 最多由10个 MetadataIndexEntry 组成，由于均直接指向 `TimeseriesMetadata`，因此其索引项类型为 `LEAF_MEASUREMENT`。而根节点指向传感器索引层级的叶子节点，其索引项类型为 `INTERNAL_MEASUREMENT`。
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466613-9b868e80-9205-11ea-860a-4bf224d04359.png">
 
-在150个设备，每个设备中有1个传感器的情况下，设备个数超过了 `max_degree_of_index_node`，形成元数据索引树的设备索引层级。在这个层级里，每个 MetadataIndexNode 最多由10个 MetadataIndexEntry 组成，由于均直接指向 `TimeseriesMetadata`，因此其索引项类型为 `LEAF_MEASUREMENT`。而后续产生的中间节点和根节点不是设备索引层级的叶子节点，因此索引项类型为 `INTERNAL_DEVICE`。
+在150个设备，每个设备中有1个传感器的情况下，设备个数超过了 `degree_of_index_node`，形成元数据索引树的设备索引层级。在这个层级里，每个 MetadataIndexNode 最多由10个 MetadataIndexEntry 组成，由于均直接指向 `TimeseriesMetadata`，因此其索引项类型为 `LEAF_MEASUREMENT`。而后续产生的中间节点和根节点不是设备索引层级的叶子节点，因此索引项类型为 `INTERNAL_DEVICE`。
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466616-9e817f00-9205-11ea-9dc1-aec392eb5225.png">
 
-在150个设备，每个设备中有150个传感器的情况下，传感器和设备个数均超过了 `max_degree_of_index_node`，形成元数据索引树的传感器层级和设备索引层级。在这两个层级里，每个 MetadataIndexNode 均最多由10个 MetadataIndexEntry 组成。如前所述，从根节点到设备索引层级的叶子节点，索引项类型分别为`INTERNAL_DEVICE` 和 `LEAF_DEVICE`，而每个设备索引层级的叶子节点都是传感器索引层级的根节点，从这里到传感器索引层级的叶子节点，索引项类型分别为`INTERNAL_MEASUREMENT` 和 `LEAF_MEASUREMENT`。
+在150个设备，每个设备中有150个传感器的情况下，传感器和设备个数均超过了 `degree_of_index_node`，形成元数据索引树的传感器层级和设备索引层级。在这两个层级里，每个 MetadataIndexNode 均最多由10个 MetadataIndexEntry 组成。如前所述，从根节点到设备索引层级的叶子节点，索引项类型分别为`INTERNAL_DEVICE` 和 `LEAF_DEVICE`，而每个设备索引层级的叶子节点都是传感器索引层级的根节点，从这里到传感器索引层级的叶子节点，索引项类型分别为`INTERNAL_MEASUREMENT` 和 `LEAF_MEASUREMENT`。
 
 元数据索引采用树形结构进行设计的目的是在设备数或者传感器数量过大时，可以不用一次读取所有的 `TimeseriesMetadata`，只需要根据所读取的传感器定位对应的节点，从而减少 I/O，加快查询速度。有关 TsFile 的读流程将在本章最后一节加以详细说明。
 

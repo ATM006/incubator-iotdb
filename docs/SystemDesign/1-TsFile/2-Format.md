@@ -244,23 +244,23 @@ All MetadataIndexNode forms a **metadata index tree**, which consists of no more
 
 To describe the structure of metadata index tree more clearly, we will give four examples here in details.
 
-The degree of the  metadata index tree (that is, the max number of each node's children) could be configured by users, and is 1024 by default. In the examples below, we assume `max_degree_of_index_node = 10` in the following examples.
+The degree of the metadata index tree (that is, the max number of each node's children) could be configured by users, and is 1024 by default. In the examples below, we assume `degree_of_index_node = 10` in the following examples.
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466597-94f81700-9205-11ea-9476-c3d083872232.png">
 
-5 devices with 5 measurements each: Since the numbers of devices and measurements are both no more than `max_degree_of_index_node`, the tree has only one MetadataIndexNode instead of more levels. The five MetadataIndex entries in MetadataIndexNode point to related `TimeseriesMetadata`.
+5 devices with 5 measurements each: Since the numbers of devices and measurements are both no more than `degree_of_index_node`, the tree has only one MetadataIndexNode instead of more levels. The five MetadataIndex entries in MetadataIndexNode point to related `TimeseriesMetadata`.
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466606-99bccb00-9205-11ea-8ba4-d2ed07529f58.png">
 
-1 device with 150 measurements: The number of measurements exceeds `max_degree_of_index_node`, so the measurement index level of the tree is formed. In this level, each MetadataIndexNode is composed of no more than 10 MetadataIndex entries. Since all the entries point to `TimeseriesMetadata`, their entry type is `LEAF_MEASUREMENT`. The root node of index tree points to the leaf nodes of measurement index level, so its entry type is `INTERNAL_MEASUREMENT`.
+1 device with 150 measurements: The number of measurements exceeds `degree_of_index_node`, so the measurement index level of the tree is formed. In this level, each MetadataIndexNode is composed of no more than 10 MetadataIndex entries. Since all the entries point to `TimeseriesMetadata`, their entry type is `LEAF_MEASUREMENT`. The root node of index tree points to the leaf nodes of measurement index level, so its entry type is `INTERNAL_MEASUREMENT`.
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466613-9b868e80-9205-11ea-860a-4bf224d04359.png">
 
-150 device with 1 measurement each: The number of devices exceeds `max_degree_of_index_node`, so the device index level of the tree is formed. In this level, each MetadataIndexNode is composed of no more than 10 MetadataIndex entries. Since all the entries point to `TimeseriesMetadata`, their entry type is `LEAF_MEASUREMENT`. Other nodes and root node of index tree are not leaf node of index level, so their entry type is `INTERNAL_DEVICE`.
+150 device with 1 measurement each: The number of devices exceeds `degree_of_index_node`, so the device index level of the tree is formed. In this level, each MetadataIndexNode is composed of no more than 10 MetadataIndex entries. Since all the entries point to `TimeseriesMetadata`, their entry type is `LEAF_MEASUREMENT`. Other nodes and root node of index tree are not leaf node of index level, so their entry type is `INTERNAL_DEVICE`.
 
 <img style="width:100%; max-width:800px; max-height:600px; margin-left:auto; margin-right:auto; display:block;" src="https://user-images.githubusercontent.com/19167280/81466616-9e817f00-9205-11ea-9dc1-aec392eb5225.png">
 
-150 device with 150 measurements each: The numbers of devices and measurements both exceed `max_degree_of_index_node`, so the device index level and measurement index level are both formed. In these two levels, each MetadataIndexNode is composed of no more than 10 MetadataIndex entries. As is described before, from the root node to the leaf nodes of device index level, the entries types are `INTERNAL_DEVICE` and `LEAF_DEVICE`; each leaf node of device index level can be seen as the root node of measurement index level, and from here to the leaf nodes of measurement index level, the entries types are `INTERNAL_MEASUREMENT` and `LEAF_MEASUREMENT`.
+150 device with 150 measurements each: The numbers of devices and measurements both exceed `degree_of_index_node`, so the device index level and measurement index level are both formed. In these two levels, each MetadataIndexNode is composed of no more than 10 MetadataIndex entries. As is described before, from the root node to the leaf nodes of device index level, the entries types are `INTERNAL_DEVICE` and `LEAF_DEVICE`; each leaf node of device index level can be seen as the root node of measurement index level, and from here to the leaf nodes of measurement index level, the entries types are `INTERNAL_MEASUREMENT` and `LEAF_MEASUREMENT`.
 
 The MetadataIndex is designed as tree structure so that not all the `TimeseriesMetadata` need to be read when the number of devices or measurements is too large. Only reading specific MetadataIndex nodes according to requirement and reducing I/O could speed up the query. More reading process of TsFile in details will be described in the last section of this chapter.
 

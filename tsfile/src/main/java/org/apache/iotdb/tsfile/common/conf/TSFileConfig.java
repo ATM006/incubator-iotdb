@@ -83,9 +83,9 @@ public class TSFileConfig implements Serializable {
    */
   private int maxNumberOfPointsInPage = 1024 * 1024;
   /**
-   * The maximum degree of a metadataIndex node, default value is 1024
+   * The degree of a metadataIndex node, default value is 1024
    */
-  private int maxDegreeOfIndexNode = 1024;
+  private int degreeOfIndexNode = 1024;
   /**
    * Data type for input timestamp, TsFile supports INT32 or INT64.
    */
@@ -233,12 +233,12 @@ public class TSFileConfig implements Serializable {
     this.maxNumberOfPointsInPage = maxNumberOfPointsInPage;
   }
 
-  public int getMaxDegreeOfIndexNode() {
-    return maxDegreeOfIndexNode;
+  public int getDegreeOfIndexNode() {
+    return degreeOfIndexNode;
   }
 
-  public void setMaxDegreeOfIndexNode(int maxDegreeOfIndexNode) {
-    this.maxDegreeOfIndexNode = maxDegreeOfIndexNode;
+  public void setDegreeOfIndexNode(int degreeOfIndexNode) {
+    this.degreeOfIndexNode = degreeOfIndexNode;
   }
 
   public String getTimeSeriesDataType() {

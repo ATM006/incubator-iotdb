@@ -336,8 +336,8 @@ public class TsFileSequenceReader implements AutoCloseable {
     Pair<MetadataIndexEntry, Long> metadataIndexPair = getMetadataAndEndOffset(
         deviceMetadataIndexNode, device, MetadataIndexNodeType.INTERNAL_DEVICE);
     List<TimeseriesMetadata> resultTimeseriesMetadataList = new ArrayList<>();
-    int maxDegreeOfIndexNode = config.getMaxDegreeOfIndexNode();
-    if (measurements.size() > maxDegreeOfIndexNode / Math.log(maxDegreeOfIndexNode)) {
+    int degreeOfIndexNode = config.getDegreeOfIndexNode();
+    if (measurements.size() > degreeOfIndexNode / Math.log(degreeOfIndexNode)) {
       traverseAndReadTimeseriesMetadataInOneDevice(resultTimeseriesMetadataList, metadataIndexPair,
           measurements);
       return resultTimeseriesMetadataList;

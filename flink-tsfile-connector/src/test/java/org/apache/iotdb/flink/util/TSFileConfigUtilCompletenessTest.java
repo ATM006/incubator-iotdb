@@ -56,7 +56,7 @@ public class TSFileConfigUtilCompletenessTest {
         "setKerberosKeytabFilePath",
         "setKerberosPrincipal",
         "setMaxNumberOfPointsInPage",
-        "setMaxDegreeOfIndexNode",
+        "setDegreeOfIndexNode",
         "setMaxStringLength",
         "setPageCheckSizeThreshold",
         "setPageSizeInByte",
