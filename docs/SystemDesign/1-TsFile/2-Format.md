@@ -126,8 +126,8 @@ PageHeader Structure
 |              Number of values              |       int        |
 |             Maximum time stamp             |       long       |
 |             Minimum time stamp             |       long       |
-|         Maximum value of the page          | Type of the page |
 |         Minimum value of the page          | Type of the page |
+|         Maximum value of the page          | Type of the page |
 |          First value of the page           | Type of the page |
 |           Last value of the page           | Type of the page |
 |              Sum of the Page               |      double      |

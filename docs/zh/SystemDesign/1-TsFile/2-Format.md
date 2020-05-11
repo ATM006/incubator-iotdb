@@ -124,8 +124,8 @@ PageHeader 结构
 |   包含的values的数量(numOfValues)    |       int        |
 |       最大时间戳(maxTimestamp)       |       long       |
 |       最小时间戳(minTimestamp)       |       long       |
-|           该页最大值(max)            | Type of the page |
 |           该页最小值(min)            | Type of the page |
+|           该页最大值(max)            | Type of the page |
 |         该页第一个值(first)          | Type of the page |
 |         该页最后一个值(last)         | Type of the page |
 |           该页值的和(sum)            |      double      |
