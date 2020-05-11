@@ -66,7 +66,7 @@
 
 Here is a graph about the TsFile structure.
 
-![TsFile Breakdown](https://user-images.githubusercontent.com/19167280/81489463-389a0380-92a8-11ea-8c82-d3de077272c4.png)
+![TsFile Breakdown](https://user-images.githubusercontent.com/19167280/81545365-5dc36a80-93ab-11ea-854f-4d647144397d.png)
 
 This TsFile contains two devices: d1, d2. Each device contains three measurements: s1, s2, s3. 6 timeseries in total, d1 is blue, d2 is purple. Each timeseries contains 2 Chunks.
 
@@ -145,26 +145,6 @@ PageHeader Structure
 ##### 1.2.3.1 ChunkMetadata
 
 The first part of metadata is `ChunkMetadata` 
-
-|     Member Description     | Member Type |
-| :------------------------: | :---------: |
-|         Start time         |    long     |
-|          End time          |    long     |
-|   Number of chunk groups   |     int     |
-| List of ChunkGroupMetadata |    list     |
-
-###### ChunkGroupMetadata
-
-|       Member Description       | Member Type |
-| :----------------------------: | :---------: |
-|            DeviceId            |   String    |
-| Start offset of the ChunkGroup |    long     |
-|  End offset of the ChunkGroup  |    long     |
-|            Version             |    long     |
-|    Number of ChunkMetadata     |     int     |
-|     List of ChunkMetadata      |    list     |
-
-###### ChunkMetadata
 
 |      Member Description      |     Member Type   |
 | :--------------------------: |     :---------:   |

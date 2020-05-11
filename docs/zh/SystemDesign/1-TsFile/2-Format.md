@@ -65,7 +65,7 @@
 
 下图是关于TsFile的结构图。
 
-![TsFile Breakdown](https://user-images.githubusercontent.com/19167280/81489463-389a0380-92a8-11ea-8c82-d3de077272c4.png)
+![TsFile Breakdown](https://user-images.githubusercontent.com/19167280/81545365-5dc36a80-93ab-11ea-854f-4d647144397d.png)
 
 此文件包括两个设备 d1、d2，每个设备包含三个测点 s1、s2、s3，共 6 个时间序列，d1为蓝色，d2为紫色。每个时间序列包含两个 Chunk。
 
