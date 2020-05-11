@@ -112,7 +112,6 @@ A `Chunk` represents the data of a *measurement* in a time range, data points in
 |            Number of pages             |     int     |
 |            Compression Type            |    short    |
 |             Encoding Type              |    short    |
-|       Max Tombstone Time(unused)       |    long     |
 
 ##### Page
 
@@ -130,8 +129,8 @@ PageHeader Structure
 |         Maximum value of the page          | Type of the page |
 |         Minimum value of the page          | Type of the page |
 |          First value of the page           | Type of the page |
-|              Sum of the Page               |      double      |
 |           Last value of the page           | Type of the page |
+|              Sum of the Page               |      double      |
 
 ##### ChunkGroupFooter
 

@@ -110,7 +110,6 @@ TsFile文件的内容可以划分为两个部分: 数据（Chunk）和元数据�
 |  包含的page数量(numOfPages)  |  int   |
 |  压缩类型(compressionType)   | short  |
 |    编码类型(encodingType)    | short  |
-| Max Tombstone Time(暂时没用) |  long  |
 
 ##### Page
 
@@ -128,8 +127,8 @@ PageHeader 结构
 |           该页最大值(max)            | Type of the page |
 |           该页最小值(min)            | Type of the page |
 |         该页第一个值(first)          | Type of the page |
-|           该页值的和(sum)            |      double      |
 |         该页最后一个值(last)         | Type of the page |
+|           该页值的和(sum)            |      double      |
 
 ##### ChunkGroupFooter
 
